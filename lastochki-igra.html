@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Три ласточки — мини-игра и памятка</title>
+<style>
+  :root{
+    --ink:#14233a; --muted:#5b7189; --line:#dce8f3; --card:#ffffff;
+    --sky:#e8f4fc; --rust:#bd5a30; --teal:#1d7a68; --blue:#2f6db3;
+    --ok:#2f8a5b; --okbg:#e7f6ee; --no:#c0503f; --nobg:#fdecea;
+    --shadow:0 14px 36px rgba(18,40,70,.10);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:"Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1100px 460px at 12% -12%, #ddeffb, transparent 62%),
+      radial-gradient(820px 380px at 92% -4%, #fdf1e3, transparent 58%),
+      #f3f8fc;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:26px 18px 40px}
+  .kicker{
+    font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--muted);font-weight:700;
+  }
+  h1{
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:clamp(34px,6vw,54px);line-height:1.02;
+    letter-spacing:-.02em;margin:6px 0 8px;
+  }
+  .sub{margin:0;color:var(--muted);font-size:16px;max-width:60ch}
+  .tabs{
+    display:inline-flex;gap:6px;background:#e6eff7;padding:6px;border-radius:999px;
+    margin:22px 0 16px;flex-wrap:wrap;
+  }
+  .tab{
+    border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;
+    font-size:15px;padding:9px 18px;border-radius:999px;cursor:pointer;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab[aria-selected="true"]{background:#fff;color:var(--ink);box-shadow:0 3px 10px rgba(18,40,70,.12)}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:20px;
+    box-shadow:var(--shadow);padding:24px;
+  }
+  .screen[hidden],.result[hidden],.feedback[hidden]{display:none}
+  /* ---------- игра ---------- */
+  .game-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .pill{
+    font-size:13px;font-weight:700;color:var(--muted);background:#eef5fb;
+    border-radius:999px;padding:6px 12px;
+  }
+  .pill.score{color:#8a4a1f;background:#fdf0e4}
+  .art svg{width:100%;max-width:330px;height:auto;display:block;margin:2px auto 6px}
+  .q{
+    font-family:Georgia,"Times New Roman",serif;font-weight:600;
+    font-size:clamp(19px,2.6vw,24px);line-height:1.28;margin:8px 0 16px;text-align:center;
+  }
+  .answers{display:grid;gap:9px}
+  .answer{
+    font:inherit;font-size:16.5px;text-align:left;padding:13px 16px;
+    background:#fff;border:1.6px solid var(--line);border-radius:14px;cursor:pointer;
+    transition:transform .12s ease, border-color .12s ease, background .12s ease;
+  }
+  .answer:hover:not(:disabled){border-color:#9dc2e6;transform:translateY(-1px)}
+  .answer:disabled{cursor:default}
+  .answer.correct{background:var(--okbg);border-color:#59a97e;font-weight:600}
+  .answer.wrong{background:var(--nobg);border-color:#d98878}
+  .answer .mark{float:right;font-weight:800}
+  .feedback{margin-top:16px;border-radius:14px;padding:14px 16px;background:#f6fafd;border:1px solid var(--line)}
+  .feedback.ok{background:var(--okbg);border-color:#bfe3cf}
+  .feedback.no{background:var(--nobg);border-color:#f0cfc8}
+  .feedback p{margin:0 0 12px}
+  .btn{
+    font:inherit;font-weight:700;font-size:15px;padding:11px 20px;border-radius:12px;
+    border:1.6px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;
+  }
+  .btn:hover{border-color:#9dc2e6}
+  .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  .btn.primary:hover{background:#2a62a3;border-color:#2a62a3}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  /* ---------- результат ---------- */
+  .result{text-align:center;padding:38px 24px}
+  .big{font-family:Georgia,serif;font-size:56px;line-height:1;margin-bottom:6px}
+  .result h2{font-family:Georgia,serif;margin:6px 0 8px}
+  .result p{color:var(--muted);margin:0 auto;max-width:46ch}
+  .result .row{justify-content:center}
+  /* ---------- определитель ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px}
+  .bird{padding:20px}
+  .bird h3{margin:6px 0 2px;font-size:19px;line-height:1.2}
+  .latin{color:var(--muted);font-style:italic;font-size:13.5px;margin:0 0 12px}
+  .bird .art svg{max-width:100%;margin:0 0 4px}
+  .labels{display:grid;gap:8px;font-size:14.5px}
+  .labels div{display:grid;grid-template-columns:78px 1fr;gap:8px}
+  .labels b{color:var(--muted);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding-top:2px}
+  .chip{
+    display:inline-block;font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:999px;
+    margin-bottom:8px;background:#eef5fb;color:#2f6db3;
+  }
+  .chip.rust{background:#fdf0e4;color:#a4552a}
+  .chip.teal{background:#e6f5f1;color:#1d7a68}
+  /* ---------- памятка ---------- */
+  .memo h2{font-family:Georgia,serif;font-size:22px;margin:0 0 12px}
+  .memo-card{margin-bottom:14px}
+  .memo-card h2{display:flex;align-items:center;gap:10px;font-size:20px}
+  .memo-card h2 span.ico{font-size:20px}
+  ul.rules{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+  ul.rules li{position:relative;padding-left:30px;font-size:15.5px}
+  ul.rules li::before{
+    content:"";position:absolute;left:6px;top:.52em;width:9px;height:9px;border-radius:3px;
+    background:var(--blue);transform:rotate(45deg);
+  }
+  ul.rules.dont li::before{background:var(--rust)}
+  ul.rules.help li::before{background:var(--teal)}
+  details{border-top:1px solid var(--line);padding:12px 0}
+  details:first-of-type{border-top:0;padding-top:0}
+  summary{cursor:pointer;font-weight:700;font-size:15.5px}
+  summary::marker{color:var(--blue)}
+  details p{margin:8px 0 0;color:#3d5468;font-size:15px}
+  .hint{font-size:13.5px;color:var(--muted);margin:14px 0 0}
+  .foot{margin-top:22px;color:var(--muted);font-size:13px;text-align:center}
+  .foot code{background:#e9f1f8;padding:2px 6px;border-radius:6px;font-size:12.5px}
+  @media (max-width:520px){
+    .wrap{padding:18px 12px 30px}
+    .card{padding:18px;border-radius:16px}
+    .labels div{grid-template-columns:1fr;gap:2px}
+  }
+  @media print{
+    body{background:#fff}
+    .top,.tabs,.foot,#screen-game,#screen-guide{display:none!important}
+    #screen-memo{display:block!important}
+    .wrap{max-width:none;padding:0}
+    .card{box-shadow:none;border:1px solid #c8d6e2;break-inside:avoid;margin-bottom:10px}
+    .hint{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="kicker">мини-игра · определитель · памятка</div>
+    <h1>Три ласточки</h1>
+    <p class="sub">Береговушка, городская и деревенская. Десять вопросов — и ты различаешь их в полёте. Всё работает без интернета.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Разделы">
+    <button class="tab" id="tab-game" role="tab" aria-selected="true" aria-controls="screen-game">🎯 Игра</button>
+    <button class="tab" id="tab-guide" role="tab" aria-selected="false" aria-controls="screen-guide">🔎 Определитель</button>
+    <button class="tab" id="tab-memo" role="tab" aria-selected="false" aria-controls="screen-memo">📋 Памятка</button>
+  </nav>
+
+  <main>
+    <!-- ИГРА -->
+    <section id="screen-game" class="screen" role="tabpanel" aria-labelledby="tab-game">
+      <div class="card" id="quiz">
+        <div class="game-top">
+          <span class="pill" id="progress">Вопрос 1 из 10</span>
+          <span class="pill score" id="score">Баллы: 0</span>
+        </div>
+        <div class="art" id="art" aria-hidden="true"></div>
+        <h2 class="q" id="question">…</h2>
+        <div class="answers" id="answers"></div>
+        <div class="feedback" id="feedback" hidden>
+          <p id="fb-text"></p>
+          <button class="btn primary" id="next">Дальше</button>
+        </div>
+      </div>
+
+      <div class="card result" id="result" hidden>
+        <div class="big" id="res-score">0 / 10</div>
+        <h2 id="res-rank">…</h2>
+        <p id="res-text">…</p>
+        <div class="row">
+          <button class="btn primary" id="again">Ещё раз</button>
+          <button class="btn" id="to-guide">В определитель</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ОПРЕДЕЛИТЕЛЬ -->
+    <section id="screen-guide" class="screen" role="tabpanel" aria-labelledby="tab-guide" hidden>
+      <div class="grid" id="guide-grid"></div>
+      <p class="hint">Подсказка для НПК: в определителе — только признаки, которые реально видно в поле. В работе на них можно ссылаться как на методику учёта.</p>
+    </section>
+
+    <!-- ПАМЯТКА -->
+    <section id="screen-memo" class="screen" role="tabpanel" aria-labelledby="tab-memo" hidden>
+      <div class="memo">
+
+        <div class="card memo-card">
+          <h2><span class="ico">👀</span> Смотри — и не трогай</h2>
+          <ul class="rules dont">
+            <li>Не разоряй гнёзда и не снимай их с крыши: внутри могут быть яйца или птенцы.</li>
+            <li>Не подходи близко к обрыву с колониями береговушек — потревоженные птицы бросают кладки.</li>
+            <li>Не свети в гнездо фонариком и не снимай со вспышкой.</li>
+            <li>Не запускай квадрокоптер над колонией.</li>
+            <li>Не «спасай» птенца, который сидит на земле: родители рядом и продолжают его кормить.</li>
+          </ul>
+        </div>
+
+        <div class="card memo-card">
+          <h2><span class="ico">🤝</span> Как помочь ласточкам</h2>
+          <ul class="rules help">
+            <li>Оставь лужу грязи во дворе — это стройматериал. Глина и мокрый песок для ласточек дороже золота.</li>
+            <li>При ремонте не заделывай старые гнёзда под карнизом. Новую штукатурку можно сделать рядом.</li>
+            <li>Повесь под карнизом полочку-основание (2–4 м от земли, в тени) — воронки иногда занимают такие места.</li>
+            <li>Не опрыскивай инсектицидами стену у гнезда: ласточки и так едят насекомых каждый день.</li>
+            <li>Не выпускай кошку гулять по крыше сарая, где гнездо.</li>
+          </ul>
+        </div>
+
+        <div class="card memo-card">
+          <h2><span class="ico">📝</span> Как наблюдать</h2>
+          <ul class="rules">
+            <li>Блокнот: дата, время, погода, место, что делали птицы.</li>
+            <li>Считай по 10 минут: сколько раз птицы подлетели к гнезду с кормом.</li>
+            <li>Наблюдай с 10–15 метров, лучше в бинокль. Не стой прямо под гнездом.</li>
+            <li>Фото + дата + точка на карте = настоящие данные, а не «я видел».</li>
+          </ul>
+        </div>
+
+        <div class="card memo-card">
+          <h2><span class="ico">🧠</span> Правда или миф</h2>
+          <details>
+            <summary>«Ласточки низко летают — к дождю»</summary>
+            <p>Правда, но причина не в самом дожде. Перед непогодой насекомые опускаются ниже, и птицы летят за ними. Ласточки ловят добычу в воздухе, поэтому их высота — это «датчик» насекомых.</p>
+          </details>
+          <details>
+            <summary>«Гнездо ласточки — просто комок грязи»</summary>
+            <p>Не совсем. Это сотни глиняных шариков, склеенных слюной, с травинками, а внутри — перья и шерсть. У городской ласточки дом закрыт со всех сторон, с летком сбоку.</p>
+          </details>
+          <details>
+            <summary>«Разорил гнездо — птица построит новое, ничего страшного»</summary>
+            <p>Построит, но потеряет кладку. Вторая попытка бывает не всегда: короткое лето не даёт времени. Поэтому гнёзда не трогают — это и есть охрана птиц.</p>
+          </details>
+          <details>
+            <summary>«Ласточка и стриж — одно и то же»</summary>
+            <p>Миф. Стриж не садится на землю, не лепит глиняных гнёзд и не поёт так, как ласточка. Похожи они только тем, что оба ловят насекомых в воздухе.</p>
+          </details>
+        </div>
+
+        <div class="card memo-card">
+          <h2><span class="ico">📚</span> Куда записать наблюдение</h2>
+          <ul class="rules">
+            <li>Школьный дневник природы — пусть у класса будет своя многолетняя таблица.</li>
+            <li>iNaturalist или eBird — вместе с учителем или родителями.</li>
+            <li>Своя карта колоний: село, улица, дом, число гнёзд.</li>
+          </ul>
+          <p class="hint">Факты здесь упрощены для детей. Для НПК сверься с определителем птиц и региональной литературой — и сошлись на источники.</p>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <p class="foot">
+    «Три ласточки» — мини-игра и памятка. Открой файл в любом браузере, интернет не нужен.
+    Памятка на A4: <code>Ctrl + P</code> из любого раздела.
+  </p>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var svgOpen = '<svg viewBox="0 0 220 150" xmlns="http://www.w3.org/2000/svg" role="img">';
+  var sky = '<circle cx="110" cy="76" r="70" fill="#e9f4fc"/>';
+
+﻿﻿﻿  var ART = {
+    barnBird: svgOpen + sky +
+      '<path d="M64 70 C 42 76, 22 84, 8 92 C 24 94, 50 88, 70 82 Z" fill="#1b2540"/>' +
+      '<path d="M68 84 C 46 92, 26 106, 16 120 C 36 112, 58 100, 76 92 Z" fill="#1b2540"/>' +
+      '<ellipse cx="106" cy="78" rx="46" ry="17" fill="#f7ecdb"/>' +
+      '<path d="M60 80 C 64 62, 94 52, 124 56 C 142 58, 152 66, 154 74 C 138 70, 116 74, 92 76 C 78 78, 66 78, 60 80 Z" fill="#1e2b4d"/>' +
+      '<circle cx="148" cy="62" r="15" fill="#1e2b4d"/>' +
+      '<path d="M161 58 L181 64 L161 66 Z" fill="#2c2c33"/>' +
+      '<circle cx="155" cy="58" r="2.6" fill="#101a28"/>' +
+      '<path d="M136 74 C 144 70, 156 72, 162 78 C 152 82, 138 80, 132 77 Z" fill="#b4552d"/>' +
+      '<path d="M108 66 C 96 42, 76 22, 50 10 C 56 34, 74 58, 96 76 Z" fill="#26334f"/>' +
+      '</svg>',
+
+    houseBird: svgOpen + sky +
+      '<path d="M66 74 C 52 80, 44 88, 40 96 C 52 92, 62 86, 72 84 Z" fill="#22314f"/>' +
+      '<path d="M66 84 C 54 90, 46 100, 42 108 C 54 102, 64 94, 76 90 Z" fill="#22314f"/>' +
+      '<ellipse cx="106" cy="78" rx="46" ry="17" fill="#ffffff"/>' +
+      '<path d="M78 84 C 80 64, 98 52, 124 56 C 142 58, 152 66, 154 74 C 138 70, 116 74, 98 78 C 90 80, 82 82, 78 84 Z" fill="#22314f"/>' +
+      '<circle cx="148" cy="62" r="15" fill="#22314f"/>' +
+      '<path d="M161 58 L181 64 L161 66 Z" fill="#2c2c33"/>' +
+      '<circle cx="155" cy="58" r="2.6" fill="#101a28"/>' +
+      '<path d="M108 66 C 96 42, 76 22, 50 10 C 56 34, 74 58, 96 76 Z" fill="#2a3a5c"/>' +
+      '</svg>',
+
+    sandBird: svgOpen + sky +
+      '<path d="M64 74 L 44 82 L 58 85 L 44 92 L 74 90 Z" fill="#7a6449"/>' +
+      '<ellipse cx="106" cy="78" rx="46" ry="17" fill="#fbf7ef"/>' +
+      '<path d="M60 80 C 64 62, 94 52, 124 56 C 142 58, 152 66, 154 74 C 138 70, 116 74, 92 76 C 78 78, 66 78, 60 80 Z" fill="#8a7358"/>' +
+      '<path d="M126 72 C 131 76, 131 90, 126 94 C 121 90, 121 76, 126 72 Z" fill="#7d6549"/>' +
+      '<circle cx="148" cy="62" r="15" fill="#8a7358"/>' +
+      '<path d="M161 58 L181 64 L161 66 Z" fill="#2c2c33"/>' +
+      '<circle cx="155" cy="58" r="2.6" fill="#101a28"/>' +
+      '<path d="M108 66 C 96 42, 76 22, 50 10 C 56 34, 74 58, 96 76 Z" fill="#7a6449"/>' +
+      '</svg>',
+
+    burrow: svgOpen + sky +
+      '<path d="M0 150 L0 92 C 60 68, 130 50, 220 42 L220 150 Z" fill="#cdac7f"/>' +
+      '<path d="M0 150 L0 112 C 70 94, 150 80, 220 74 L220 150 Z" fill="#b9965f"/>' +
+      '<path d="M0 92 C 60 68, 130 50, 220 42" stroke="#8fae62" stroke-width="5" fill="none"/>' +
+      '<path d="M118 104 C 150 100, 176 96, 196 93" stroke="#a98757" stroke-width="10" fill="none" stroke-linecap="round"/><circle cx="196" cy="93" r="9" fill="#a98757"/>' +
+      '<ellipse cx="118" cy="104" rx="22" ry="19" fill="#3b2c20"/>' +
+      '<ellipse cx="118" cy="104" rx="22" ry="19" fill="none" stroke="#8a6f4d" stroke-width="4"/>' +
+      '</svg>',
+
+    closedNest: svgOpen + sky +
+      '<path d="M0 0 L220 0 L220 20 L0 20 Z" fill="#8c7a66"/>' +
+      '<path d="M0 20 L220 20 L220 27 L0 27 Z" fill="#a08c76"/>' +
+      '<path d="M62 27 C 62 68, 86 98, 110 98 C 134 98, 158 68, 158 27 Z" fill="#d3b78d"/>' +
+      '<ellipse cx="110" cy="96" rx="26" ry="5" fill="#bfa176"/>' +
+      '<circle cx="134" cy="78" r="9" fill="#3b2c20"/>' +
+      '<circle cx="84" cy="56" r="2.2" fill="#b99a72"/>' +
+      '<circle cx="96" cy="48" r="2.2" fill="#b99a72"/>' +
+      '<circle cx="110" cy="46" r="2.2" fill="#b99a72"/>' +
+      '<circle cx="126" cy="50" r="2.2" fill="#b99a72"/>' +
+      '<circle cx="140" cy="58" r="2.2" fill="#b99a72"/>' +
+      '<circle cx="90" cy="76" r="2.2" fill="#b99a72"/>' +
+      '</svg>',
+
+    openNest: svgOpen + sky +
+      '<rect x="0" y="96" width="220" height="18" fill="#a9855c"/>' +
+      '<path d="M0 96 L220 96" stroke="#8e6d48" stroke-width="2"/>' +
+      '<rect x="24" y="102" width="172" height="2" fill="#8e6d48" opacity=".5"/>' +
+      '<path d="M78 58 C 78 88, 92 98, 110 98 C 128 98, 142 88, 142 58 Z" fill="#d3b78d"/>' +
+      '<ellipse cx="110" cy="58" rx="32" ry="8" fill="#e2cba6"/>' +
+      '<ellipse cx="110" cy="58" rx="25" ry="5.5" fill="#5c4632"/>' +
+      '<path d="M92 46 L84 34" stroke="#d3b78d" stroke-width="4" stroke-linecap="round"/>' +
+      '<path d="M130 46 L140 34" stroke="#d3b78d" stroke-width="4" stroke-linecap="round"/>' +
+      '</svg>'
+  };
+
+  var BIRDS = {
+    barn: {
+      short: 'Деревенская ласточка',
+      alias: 'касатка',
+      latin: 'Hirundo rustica',
+      chip: 'rust',
+      art: 'barnBird',
+      signs: [
+        '<b>Спина</b> сине-чёрная, блестящая; горло рыжее, брюшко кремовое.',
+        '<b>Хвост</b> с двумя длинными «косицами» — главный знак.',
+        '<b>Голос</b> звонкое щебетание «тиль-вит-тиль-вит».'
+      ],
+      nest: 'Открытая чаша из грязи на балке внутри сарая, хлева, под навесом.',
+      where: 'Деревни, фермы, животноводческие постройки.'
+    },
+    house: {
+      short: 'Городская ласточка',
+      alias: 'воронок',
+      latin: 'Delichon urbicum',
+      chip: '',
+      art: 'houseBird',
+      signs: [
+        '<b>Низ</b> белый, и белая поясница над хвостом — видно в полёте.',
+        '<b>Хвост</b> короткий, с небольшой вилочкой, без косиц.',
+        '<b>Голос</b> сухое «трр-трр» и негромкое щебетание.'
+      ],
+      nest: 'Закрытая глиняная капсула с летком сбоку — снаружи дома, под карнизом.',
+      where: 'Посёлки и города, колониями по 5–30 гнёзд.'
+    },
+    sand: {
+      short: 'Береговушка',
+      alias: 'береговая ласточка',
+      latin: 'Riparia riparia',
+      chip: 'teal',
+      art: 'sandBird',
+      signs: [
+        '<b>Спина</b> буровато-серая — единственная из трёх коричневая.',
+        '<b>Грудь</b> белая с бурым «ошейником» поперёк.',
+        '<b>Голос</b> негромкое «чирр-чирр».'
+      ],
+      nest: 'Нора в обрыве длиной до полутора метров, в конце — гнездовая камера.',
+      where: 'Обрывы рек, овраги, карьеры, кучи песка. Колониями.'
+    }
+  };
+
+  var QUESTIONS = [
+    { art:'barnBird', q:'Длинные косицы на хвосте, сине-чёрная спинка и рыжее горло. Кто это?',
+      a:'barn', why:'Деревенская ласточка, или касатка. Косицы хвоста видно даже в быстром полёте.' },
+    { art:'houseBird', q:'Белая поясница, белое брюшко и короткий хвостик с вилочкой.',
+      a:'house', why:'Городская ласточка, или воронок. Белая поясница — её главный полевой признак.' },
+    { art:'sandBird', q:'Буроватая спинка и бурый «ошейник» на белой грудке.',
+      a:'sand', why:'Береговушка. Она единственная из трёх с коричневой спиной, поэтому её не спутать.' },
+    { art:'burrow', q:'Кто роет в обрыве нору длиной до полутора метров?',
+      a:'sand', why:'Береговушка. В конце норы — камера с гнездом, а вход — круглое отверстие в склоне.' },
+    { art:'closedNest', q:'Чьё гнездо — закрытая глиняная капсула с летком сбоку?',
+      a:'house', why:'Городская ласточка. Такое гнездо защищает кладку от дождя и ветра.' },
+    { art:'openNest', q:'Чья постройка — открытая чаша из грязи на балке в сарае?',
+      a:'barn', why:'Деревенская ласточка. Она лепит открытый сверху лоток внутри постройки.' },
+    { art:'houseBird', q:'Кто лепит гнёзда снаружи дома, под карнизом, целой колонией?',
+      a:'house', why:'Городская ласточка. Её колонии часто украшают стены домов и мостов.' },
+    { art:'barnBird', q:'Кто часто селится в хлеву или сарае, рядом со скотом?',
+      a:'barn', why:'Деревенская ласточка. В хлеву теплее и всегда есть насекомые.' },
+    { art:'sandBird', q:'У кого хвост почти без вилочки?',
+      a:'sand', why:'У береговушки. Её хвост с небольшой выемкой, а не с длинной вилкой.' },
+    { art:'closedNest', q:'Чья колония висит под крышей вплотную, гнездо к гнезду?',
+      a:'house', why:'Городская ласточка. В плотной колонии птицы быстрее замечают хищника.' }
+  ];
+
+  var ORDER = ['barn','house','sand'];
+
+  var el = function(id){ return document.getElementById(id); };
+  var state = { i:0, score:0, locked:false, options:[] };
+
+  function shuffle(arr){
+    var a = arr.slice();
+    for (var k = a.length - 1; k > 0; k--) {
+      var j = Math.floor(Math.random() * (k + 1));
+      var t = a[k]; a[k] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function start(){
+    state.i = 0; state.score = 0; state.locked = false;
+    state.options = shuffle(ORDER);
+    el('result').hidden = true;
+    el('quiz').hidden = false;
+    render();
+  }
+
+  function render(){
+    var q = QUESTIONS[state.i];
+    state.locked = false;
+    el('progress').textContent = 'Вопрос ' + (state.i + 1) + ' из ' + QUESTIONS.length;
+    el('score').textContent = 'Баллы: ' + state.score;
+    el('art').innerHTML = ART[q.art];
+    el('question').textContent = q.q;
+
+    var box = el('answers');
+    box.innerHTML = '';
+    state.options.forEach(function(key){
+      var b = document.createElement('button');
+      b.className = 'answer';
+      b.type = 'button';
+      b.textContent = BIRDS[key].short;
+      b.addEventListener('click', function(){ choose(key, b); });
+      box.appendChild(b);
+    });
+
+    var fb = el('feedback');
+    fb.hidden = true;
+    fb.className = 'feedback';
+    el('next').textContent = (state.i === QUESTIONS.length - 1) ? 'Результат' : 'Дальше';
+  }
+
+  function choose(key, btn){
+    if (state.locked) return;
+    state.locked = true;
+    var q = QUESTIONS[state.i];
+    var ok = key === q.a;
+    if (ok) state.score++;
+
+    var buttons = el('answers').querySelectorAll('.answer');
+    for (var n = 0; n < buttons.length; n++) {
+      var b = buttons[n];
+      b.disabled = true;
+      if (b.textContent === BIRDS[q.a].short) {
+        b.classList.add('correct');
+        b.insertAdjacentHTML('beforeend', '<span class="mark">✓</span>');
+      }
+    }
+    if (!ok) {
+      btn.classList.add('wrong');
+      btn.insertAdjacentHTML('beforeend', '<span class="mark">✕</span>');
+    }
+
+    el('score').textContent = 'Баллы: ' + state.score;
+    var fb = el('feedback');
+    fb.hidden = false;
+    fb.className = 'feedback ' + (ok ? 'ok' : 'no');
+    el('fb-text').innerHTML = (ok ? '<b>Верно!</b> ' : '<b>Не совсем.</b> ') + q.why;
+    el('next').focus();
+  }
+
+  function next(){
+    if (state.i < QUESTIONS.length - 1) {
+      state.i++;
+      render();
+    } else {
+      finish();
+    }
+  }
+
+  function finish(){
+    var total = QUESTIONS.length;
+    var s = state.score;
+    var rank, text;
+    if (s === total) { rank = 'Знаток ласточек'; text = 'Идеально. Ты можешь вести экскурсию у колонии и не ошибиться.'; }
+    else if (s >= 8) { rank = 'Опытный наблюдатель'; text = 'Отличный результат. Осталось отшлифовать пару признаков — и можно вести учёт.'; }
+    else if (s >= 6) { rank = 'Юный натуралист'; text = 'Хорошее начало. Загляни в определитель: хвост и поясница решают почти всё.'; }
+    else { rank = 'Только начало'; text = 'Ничего страшного. Открой определитель, посмотри на три картинки — и попробуй снова.'; }
+
+    el('res-score').textContent = s + ' / ' + total;
+    el('res-rank').textContent = rank;
+    el('res-text').textContent = text;
+    el('quiz').hidden = true;
+    el('result').hidden = false;
+  }
+
+  function showTab(name){
+    ['game','guide','memo'].forEach(function(k){
+      var tab = el('tab-' + k), screen = el('screen-' + k);
+      var on = (k === name);
+      tab.setAttribute('aria-selected', on ? 'true' : 'false');
+      screen.hidden = !on;
+    });
+  }
+
+  function buildGuide(){
+    var grid = el('guide-grid');
+    grid.innerHTML = '';
+    ORDER.forEach(function(key){
+      var b = BIRDS[key];
+      var card = document.createElement('article');
+      card.className = 'card bird';
+      var chip = b.chip ? '<span class="chip ' + b.chip + '">' + b.alias + '</span>' : '<span class="chip">' + b.alias + '</span>';
+      card.innerHTML =
+        chip +
+        '<div class="art">' + ART[b.art] + '</div>' +
+        '<h3>' + b.short + '</h3>' +
+        '<p class="latin">' + b.latin + '</p>' +
+        '<div class="labels">' +
+          '<div><b>Приметы</b><span>' + b.signs.join('<br>') + '</span></div>' +
+          '<div><b>Гнездо</b><span>' + b.nest + '</span></div>' +
+          '<div><b>Где</b><span>' + b.where + '</span></div>' +
+        '</div>';
+      grid.appendChild(card);
+    });
+  }
+
+  el('next').addEventListener('click', next);
+  el('again').addEventListener('click', start);
+  el('to-guide').addEventListener('click', function(){ showTab('guide'); });
+
+  el('tab-game').addEventListener('click', function(){ showTab('game'); });
+  el('tab-guide').addEventListener('click', function(){ showTab('guide'); });
+  el('tab-memo').addEventListener('click', function(){ showTab('memo'); });
+
+  window.addEventListener('beforeprint', function(){
+    var ds = document.querySelectorAll('details');
+    for (var i = 0; i < ds.length; i++) ds[i].open = true;
+  });
+
+  buildGuide();
+  start();
+  var hash = (location.hash || '').replace('#', '');
+  if (hash === 'guide' || hash === 'memo') showTab(hash);
+})();
+</script>
+</body>
+</html>
